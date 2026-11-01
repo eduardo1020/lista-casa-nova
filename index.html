@@ -1,165 +1,189 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chá de Casa Nova</title>
-<style>
-:root{--bg:#f8f6f0;--card:#fff;--ink:#302e29;--muted:#77736a;--green:#5b6d50;--pale:#edf1e8;--line:#e7e1d6}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
-header{text-align:center;padding:48px 18px 34px;background:#e8eee3}header small{text-transform:uppercase;letter-spacing:.17em;color:var(--green);font-weight:800}
-h1{font:500 clamp(2rem,6vw,3.2rem)/1.15 Georgia,serif;margin:12px 0}header p{max-width:620px;margin:auto;color:#5d6257}
-main{max-width:940px;margin:26px auto 55px;padding:0 16px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-#status{color:var(--muted);font-size:.93rem}button,.btn{border:0;border-radius:999px;padding:10px 15px;font:inherit;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
-.primary{background:var(--green);color:white}.secondary{background:white;border:1px solid var(--line);color:var(--ink)}.buy{background:var(--pale);color:var(--green);font-size:.9rem;padding:8px 12px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:12px}.item{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;gap:12px;align-items:center;box-shadow:0 4px 14px #302e2908}
-.info{flex:1;min-width:0}.item h2{font-size:1rem;margin:0 0 10px}.links{display:flex;gap:8px;flex-wrap:wrap}.claim{min-width:112px;max-width:135px;text-align:center;font-size:.85rem}.claim[disabled]{opacity:.6;cursor:wait}
-.item.claimed{opacity:.72}.tag{display:block;font-size:.75rem;color:var(--muted);margin-bottom:6px}
-.hidden{display:none!important}.notice{padding:14px 16px;background:#fff;border:1px solid var(--line);border-radius:12px;color:var(--muted);margin:14px 0}
-dialog{border:0;border-radius:20px;width:min(92vw,460px);padding:24px;box-shadow:0 18px 70px #0003}dialog::backdrop{background:#1d211bcc}dialog h2{font:500 1.7rem Georgia,serif;margin-top:0}.pixkey{background:#f6f3ed;padding:12px;border-radius:10px;overflow-wrap:anywhere}.foot{text-align:center;color:var(--muted);font-size:.82rem;padding:0 16px 28px}
-@media(max-width:480px){.item{padding:12px}.claim{min-width:95px;padding:9px}}
-</style>
-</head>
-<body>
-<header><small>Um novo capítulo começa</small><h1>Chá de Casa Nova</h1>
-<p>Estamos preparando nosso cantinho com muito carinho. Escolha um presente disponível ou, se preferir, contribua via Pix. Obrigado por fazer parte desse momento! ♡</p></header>
-<main>
-<div class="top"><div id="status">Conectando à lista compartilhada…</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="primary" id="pixOpen">♡ Presentear via Pix</button><button class="secondary" id="toggle">Mostrar todos</button></div></div>
-<div id="setupWarning" class="notice hidden">A lista ainda não está conectada ao banco compartilhado. Siga o README para configurar o Supabase e publicar o site.</div>
-<div id="items" class="grid"></div>
-<p class="notice">Ao reservar um presente, ele deixa de aparecer como disponível para os demais convidados. Se alguém marcar por engano, é possível desfazer a reserva nesta mesma página.</p>
-</main>
-<footer class="foot">Feito com carinho para celebrar nosso novo lar.</footer>
-<dialog id="pixDialog"><h2>Presenteie via Pix</h2><p>Se preferir, contribua com qualquer valor para ajudar a montar nossa casa.</p><div class="pixkey"><strong>Chave Pix (e-mail)</strong><br><span id="pixKey"></span><br><span id="pixName"></span></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="primary" id="copyPix">Copiar chave Pix</button><button class="secondary" id="closePix">Fechar</button></div><p id="pixMessage" class="tag">Confira o nome do destinatário no aplicativo do banco antes de confirmar.</p></dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-/* CONFIGURAÇÃO: preencha URL e chave pública (anon/publishable) do seu projeto Supabase.
-   Nunca coloque uma chave service_role neste arquivo público. */
 const SUPABASE_URL = "https://kllfxffqcaueumypkzet.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_WdpnA3lz9-6LXhk1WfjGqg_irtE9vbL";
 const PIX_KEY = "eduardofilipe538@gmail.com";
 const PIX_NAME = "Eduardo Filipe de Melo Cassiano";
+
 const ITEMS = [
-  {
-    "id": "jogo-facas",
-    "name": "Jogo de facas",
-    "url": "https://br.shp.ee/1w5yfuVz"
-  },
-  {
-    "id": "tabua-corte",
-    "name": "Tábua de corte",
-    "url": "https://br.shp.ee/2k4cup7g"
-  },
-  {
-    "id": "aparelho-jantar",
-    "name": "Aparelho de jantar",
-    "url": "https://br.shp.ee/F3VS5Kbw"
-  },
-  {
-    "id": "copos",
-    "name": "Copos",
-    "url": "https://br.shp.ee/1HemRkSm"
-  },
-  {
-    "id": "xicaras",
-    "name": "Xícaras",
-    "url": "https://br.shp.ee/wuqKCiDd"
-  },
-  {
-    "id": "jogo-sobremesa",
-    "name": "Jogo de sobremesa",
-    "url": "https://br.shp.ee/PtvuSedi"
-  },
-  {
-    "id": "travessa-marinex",
-    "name": "Travessa marinex",
-    "url": "https://br.shp.ee/tKqAxaWK"
-  },
-  {
-    "id": "jogo-panelas",
-    "name": "Jogo de panelas",
-    "url": "https://a.co/d/00dQWEhu"
-  },
-  {
-    "id": "panela-pressao",
-    "name": "Panela de pressão",
-    "url": "https://br.shp.ee/orEQdXLW"
-  },
-  {
-    "id": "forma-assar",
-    "name": "Forma para assar",
-    "url": "https://br.shp.ee/tFJkaif5"
-  },
-  {
-    "id": "liquidificador",
-    "name": "Liquidificador",
-    "url": "https://br.shp.ee/8P5XabX6"
-  },
-  {
-    "id": "manta-sofa",
-    "name": "Manta para sofá",
-    "url": "https://br.shp.ee/Smndtcw9"
-  },
-  {
-    "id": "almofadas",
-    "name": "Almofadas",
-    "url": "https://br.shp.ee/AxnYLvnh"
-  }
+  { "id": "jogo-facas", "name": "Jogo de facas", "url": "https://br.shp.ee/1w5yfuVz" },
+  { "id": "tabua-corte", "name": "Tábua de corte", "url": "https://br.shp.ee/2k4cup7g" },
+  { "id": "aparelho-jantar", "name": "Aparelho de jantar", "url": "https://br.shp.ee/F3VS5Kbw" },
+  { "id": "copos", "name": "Copos", "url": "https://br.shp.ee/1HemRkSm" },
+  { "id": "xicaras", "name": "Xícaras", "url": "https://br.shp.ee/wuqKCiDd" },
+  { "id": "jogo-sobremesa", "name": "Jogo de sobremesa", "url": "https://br.shp.ee/PtvuSedi" },
+  { "id": "travessa-marinex", "name": "Travessa marinex", "url": "https://br.shp.ee/tKqAxaWK" },
+  { "id": "jogo-panelas", "name": "Jogo de panelas", "url": "https://a.co/d/00dQWEhu" },
+  { "id": "panela-pressao", "name": "Panela de pressão", "url": "https://br.shp.ee/orEQdXLW" },
+  { "id": "forma-assar", "name": "Forma para assar", "url": "https://br.shp.ee/tFJkaif5" },
+  { "id": "liquidificador", "name": "Liquidificador", "url": "https://br.shp.ee/8P5XabX6" },
+  { "id": "manta-sofa", "name": "Manta para sofá", "url": "https://br.shp.ee/Smndtcw9" },
+  { "id": "almofadas", "name": "Almofadas", "url": "https://br.shp.ee/AxnYLvnh" }
 ];
-let showAll = false, client = null, claims = new Set();
-const root = document.getElementById("items"), statusEl = document.getElementById("status");
+
+let showAll = false, client = null;
+let claimsMap = new Map(); // Guarda { item_id: { claimed_by, claim_token } }
+
+const root = document.getElementById("items");
+const statusEl = document.getElementById("status");
 const warning = document.getElementById("setupWarning");
+
 const ready = SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("COLE_AQUI") && !SUPABASE_ANON_KEY.includes("COLE_AQUI");
 document.getElementById("pixKey").textContent = PIX_KEY;
 document.getElementById("pixName").textContent = "Destinatário: " + PIX_NAME;
+
+// Gera ou recupera um token único para o navegador do usuário
+function getMyToken() {
+  let token = localStorage.getItem("my_gift_token");
+  if (!token) {
+    token = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+    localStorage.setItem("my_gift_token", token);
+  }
+  return token;
+}
+
 function render(){
- root.innerHTML="";
- const visible=ITEMS.filter(x=>showAll||!claims.has(x.id));
- statusEl.textContent=`${ITEMS.length-claims.size} de ${ITEMS.length} presentes disponíveis`;
- document.getElementById("toggle").textContent=showAll?"Mostrar disponíveis":"Mostrar todos";
- if(!visible.length){root.innerHTML='<div class="notice">Todos os presentes já foram reservados. Obrigado pelo carinho! ♡</div>';return}
- visible.forEach(item=>{
-  const card=document.createElement("article");card.className="item"+(claims.has(item.id)?" claimed":"");
-  const info=document.createElement("div");info.className="info";
-  const h=document.createElement("h2");h.textContent=item.name;info.appendChild(h);
-  const links=document.createElement("div");links.className="links";
-  const a=document.createElement("a");a.className="btn buy";a.href=item.url;a.target="_blank";a.rel="noopener noreferrer";a.textContent="Ver produto ↗";links.appendChild(a);info.appendChild(links);
-  const b=document.createElement("button");b.className=claims.has(item.id)?"secondary claim":"primary claim";
-  b.textContent=claims.has(item.id)?"Desfazer reserva":"Vou presentear";
-  b.disabled=!client;
-  b.addEventListener("click",()=>toggleClaim(item));
-  card.append(info,b);root.appendChild(card);
+ root.innerHTML = "";
+ const visible = ITEMS.filter(x => showAll || !claimsMap.has(x.id));
+ statusEl.textContent = `${ITEMS.length - claimsMap.size} de ${ITEMS.length} presentes disponíveis`;
+ document.getElementById("toggle").textContent = showAll ? "Mostrar disponíveis" : "Mostrar todos";
+
+ if (!visible.length) {
+   root.innerHTML = '<div class="notice">Todos os presentes já foram reservados. Obrigado pelo carinho! ♡</div>';
+   return;
+ }
+
+ const myToken = getMyToken();
+
+ visible.forEach(item => {
+  const claimData = claimsMap.get(item.id);
+  const isClaimed = !!claimData;
+  const isMyClaim = isClaimed && (claimData.claim_token === myToken);
+
+  const card = document.createElement("article");
+  card.className = "item" + (isClaimed ? " claimed" : "");
+
+  const info = document.createElement("div");
+  info.className = "info";
+
+  const h = document.createElement("h2");
+  h.textContent = item.name;
+  info.appendChild(h);
+
+  if (isClaimed) {
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = `Reservado por ${claimData.claimed_by || 'um convidado'}`;
+    info.appendChild(tag);
+  }
+
+  const links = document.createElement("div");
+  links.className = "links";
+  const a = document.createElement("a");
+  a.className = "btn buy";
+  a.href = item.url;
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+  a.textContent = "Ver produto ↗";
+  links.appendChild(a);
+  info.appendChild(links);
+
+  const b = document.createElement("button");
+  
+  if (!isClaimed) {
+    b.className = "primary claim";
+    b.textContent = "Vou presentear";
+    b.disabled = !client;
+    b.addEventListener("click", () => claimItem(item));
+  } else if (isMyClaim) {
+    b.className = "secondary claim";
+    b.textContent = "Desfazer minha reserva";
+    b.disabled = !client;
+    b.addEventListener("click", () => unclaimItem(item, claimData.claim_token));
+  } else {
+    b.className = "secondary claim";
+    b.textContent = "Reservado";
+    b.disabled = true; // Desativado para quem não é o dono da reserva
+  }
+
+  card.append(info, b);
+  root.appendChild(card);
  });
 }
+
 async function loadClaims(){
- if(!client){warning.classList.remove("hidden");statusEl.textContent="Configuração pendente";render();return}
+ if (!client) {
+   warning.classList.remove("hidden");
+   statusEl.textContent = "Configuração pendente";
+   render();
+   return;
+ }
  warning.classList.add("hidden");
- const {data,error}=await client.from("gift_claims").select("item_id");
- if(error){statusEl.textContent="Erro ao carregar a lista";warning.classList.remove("hidden");warning.textContent="Não foi possível carregar as reservas. Confira as configurações do Supabase e as políticas SQL no README.";console.error(error);return}
- claims=new Set((data||[]).map(x=>x.item_id));render();
+ const { data, error } = await client.from("gift_claims").select("item_id, claimed_by, claim_token");
+ 
+ if (error) {
+   statusEl.textContent = "Erro ao carregar a lista";
+   warning.classList.remove("hidden");
+   console.error(error);
+   return;
+ }
+ 
+ claimsMap = new Map((data || []).map(x => [x.item_id, { claimed_by: x.claimed_by, claim_token: x.claim_token }]));
+ render();
 }
-async function toggleClaim(item){
- const wantClaim=!claims.has(item.id);
- if(wantClaim){
-  const {error}=await client.from("gift_claims").insert({item_id:item.id});
-  if(error){alert(error.code==="23505"?"Esse presente acabou de ser reservado por outra pessoa. A lista será atualizada.":"Não foi possível reservar agora. Tente novamente.");}
- }else{
-  const {error}=await client.from("gift_claims").delete().eq("item_id",item.id);
-  if(error) alert("Não foi possível desfazer a reserva.");
+
+async function claimItem(item) {
+ const name = prompt("Digite seu nome para confirmar a reserva do presente:");
+ if (!name || !name.trim()) return;
+
+ const myToken = getMyToken();
+ const { error } = await client.from("gift_claims").insert({
+   item_id: item.id,
+   claimed_by: name.trim(),
+   claim_token: myToken
+ });
+
+ if (error) {
+   alert(error.code === "23505" ? "Esse presente acabou de ser reservado por outra pessoa." : "Não foi possível reservar agora. Tente novamente.");
  }
  await loadClaims();
 }
-document.getElementById("toggle").addEventListener("click",()=>{showAll=!showAll;render()});
-const dlg=document.getElementById("pixDialog");
-document.getElementById("pixOpen").addEventListener("click",()=>dlg.showModal());
-document.getElementById("closePix").addEventListener("click",()=>dlg.close());
-document.getElementById("copyPix").addEventListener("click",async()=>{
- try{await navigator.clipboard.writeText(PIX_KEY);document.getElementById("pixMessage").textContent="Chave Pix copiada. Confira o destinatário no banco antes de confirmar."}
- catch(e){document.getElementById("pixMessage").textContent="Copie manualmente a chave exibida acima."}
+
+async function unclaimItem(item, token) {
+ const myToken = getMyToken();
+ if (token !== myToken) {
+   alert("Apenas a pessoa que reservou este presente pode desfazer a reserva neste aparelho.");
+   return;
+ }
+
+ if (!confirm("Tem certeza que deseja cancelar a reserva deste presente?")) return;
+
+ const { error } = await client.from("gift_claims").delete().eq("item_id", item.id).eq("claim_token", myToken);
+ if (error) {
+   alert("Não foi possível desfazer a reserva.");
+ }
+ await loadClaims();
+}
+
+document.getElementById("toggle").addEventListener("click", () => { showAll = !showAll; render(); });
+
+const dlg = document.getElementById("pixDialog");
+document.getElementById("pixOpen").addEventListener("click", () => dlg.showModal());
+document.getElementById("closePix").addEventListener("click", () => dlg.close());
+document.getElementById("copyPix").addEventListener("click", async () => {
+ try {
+   await navigator.clipboard.writeText(PIX_KEY);
+   document.getElementById("pixMessage").textContent = "Chave Pix copiada!";
+ } catch(e) {
+   document.getElementById("pixMessage").textContent = "Copie manualmente a chave acima.";
+ }
 });
-if(ready){
- client=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+if (ready) {
+ client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
  loadClaims();
- client.channel("gift-claims-live").on("postgres_changes",{event:"*",schema:"public",table:"gift_claims"},()=>loadClaims()).subscribe();
-}else{loadClaims()}
+ client.channel("gift-claims-live").on("postgres_changes", { event: "*", schema: "public", table: "gift_claims" }, () => loadClaims()).subscribe();
+} else {
+ loadClaims();
+}
 </script>
-</body></html>
