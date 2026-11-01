@@ -1,3 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chá de Casa Nova</title>
+<style>
+:root{--bg:#f8f6f0;--card:#fff;--ink:#302e29;--muted:#77736a;--green:#5b6d50;--pale:#edf1e8;--line:#e7e1d6}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+header{text-align:center;padding:48px 18px 34px;background:#e8eee3}header small{text-transform:uppercase;letter-spacing:.17em;color:var(--green);font-weight:800}
+h1{font:500 clamp(2rem,6vw,3.2rem)/1.15 Georgia,serif;margin:12px 0}header p{max-width:620px;margin:auto;color:#5d6257}
+main{max-width:940px;margin:26px auto 55px;padding:0 16px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+#status{color:var(--muted);font-size:.93rem}button,.btn{border:0;border-radius:999px;padding:10px 15px;font:inherit;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.primary{background:var(--green);color:white}.secondary{background:white;border:1px solid var(--line);color:var(--ink)}.buy{background:var(--pale);color:var(--green);font-size:.9rem;padding:8px 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:12px}.item{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;gap:12px;align-items:center;box-shadow:0 4px 14px #302e2908}
+.info{flex:1;min-width:0}.item h2{font-size:1rem;margin:0 0 6px}.links{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.claim{min-width:112px;max-width:150px;text-align:center;font-size:.85rem}.claim[disabled]{opacity:.6;cursor:wait}
+.item.claimed{opacity:.78}.tag{display:block;font-size:.78rem;color:var(--green);font-weight:600;margin-bottom:4px}
+.hidden{display:none!important}.notice{padding:14px 16px;background:#fff;border:1px solid var(--line);border-radius:12px;color:var(--muted);margin:14px 0}
+dialog{border:0;border-radius:20px;width:min(92vw,460px);padding:24px;box-shadow:0 18px 70px #0003}dialog::backdrop{background:#1d211bcc}dialog h2{font:500 1.7rem Georgia,serif;margin-top:0}.pixkey{background:#f6f3ed;padding:12px;border-radius:10px;overflow-wrap:anywhere}.foot{text-align:center;color:var(--muted);font-size:.82rem;padding:0 16px 28px}
+@media(max-width:480px){.item{padding:12px}.claim{min-width:95px;padding:9px}}
+</style>
+</head>
+<body>
+<header><small>Um novo capítulo começa</small><h1>Chá de Casa Nova</h1>
+<p>Estamos preparando nosso cantinho com muito carinho. Escolha um presente disponível ou, se preferir, contribua via Pix. Obrigado por fazer parte desse momento! ♡</p></header>
+<main>
+<div class="top"><div id="status">Conectando à lista compartilhada…</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="primary" id="pixOpen">♡ Presentear via Pix</button><button class="secondary" id="toggle">Mostrar todos</button></div></div>
+<div id="setupWarning" class="notice hidden">A lista ainda não está conectada ao banco compartilhado. Siga o README para configurar o Supabase e publicar o site.</div>
+<div id="items" class="grid"></div>
+<p class="notice">Ao reservar um presente, ele deixa de aparecer como disponível para os demais convidados. Se você precisar cancelar, poderá fazê-lo pelo mesmo aparelho que fez a reserva.</p>
+</main>
+<footer class="foot">Feito com carinho para celebrar nosso novo lar.</footer>
+<dialog id="pixDialog"><h2>Presenteie via Pix</h2><p>Se preferir, contribua com qualquer valor para ajudar a montar nossa casa.</p><div class="pixkey"><strong>Chave Pix (e-mail)</strong><br><span id="pixKey"></span><br><span id="pixName"></span></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="primary" id="copyPix">Copiar chave Pix</button><button class="secondary" id="closePix">Fechar</button></div><p id="pixMessage" class="tag">Confira o nome do destinatário no aplicativo do banco antes de confirmar.</p></dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = "https://kllfxffqcaueumypkzet.supabase.co";
@@ -22,7 +54,7 @@ const ITEMS = [
 ];
 
 let showAll = false, client = null;
-let claimsMap = new Map(); // Guarda { item_id: { claimed_by, claim_token } }
+let claimsMap = new Map();
 
 const root = document.getElementById("items");
 const statusEl = document.getElementById("status");
@@ -32,7 +64,6 @@ const ready = SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("COL
 document.getElementById("pixKey").textContent = PIX_KEY;
 document.getElementById("pixName").textContent = "Destinatário: " + PIX_NAME;
 
-// Gera ou recupera um token único para o navegador do usuário
 function getMyToken() {
   let token = localStorage.getItem("my_gift_token");
   if (!token) {
@@ -103,7 +134,7 @@ function render(){
   } else {
     b.className = "secondary claim";
     b.textContent = "Reservado";
-    b.disabled = true; // Desativado para quem não é o dono da reserva
+    b.disabled = true;
   }
 
   card.append(info, b);
@@ -187,3 +218,5 @@ if (ready) {
  loadClaims();
 }
 </script>
+</body>
+</html>
